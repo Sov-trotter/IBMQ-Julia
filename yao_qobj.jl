@@ -49,7 +49,6 @@ function generate_inst(blk::ControlBlock)
         nm = "cy"
     elseif gate isa ZGate
         nm = "cz"
-    elseif gate isa ShiftGate
     end
     # todo :add more gates supported by the control block
     return Dict("name"=>"$(nm)", "qubits"=>[blk.locs..., blk.ctrl_locs...])
