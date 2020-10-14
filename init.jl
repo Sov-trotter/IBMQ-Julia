@@ -88,42 +88,8 @@ function status()
     response_parsed = JSON.parse(response_json)
     return response_parsed["status"]
 end
-json = """{
-    "qobj_id": "exp123_072018",
-    "schema_version": "1.0.0",
-    "type": "QASM",
-    "header": {
-        "description": "Set of Experiments 1",
-        "backend_name": "ibmq_qasm_simulator"},
-    "config": {
-        "shots": 1024,
-        "memory_slots": 1,
-        "init_qubits": true
-        },
-    "experiments": [
-        {
-        "header": {
-            "memory_slots": 1,
-            "n_qubits": 2,
-            "clbit_labels": [["c1", 0]],
-            "qubit_labels": [null,["q", 0],["q",1]]
-            },
-        "config": {},
-        "instructions": [
-            {"name": "h", "qubits": [1]},
-            {"name": "id", "qubits": [2]},
-            {"name": "s", "qubits": [1]}
-            ]
-        }
-        ]    
-}"""
 
-
-
-
-
-
-# # get result
+# get result
 url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(jobid)/resultDownloadUrl?access_token=$(id)"
 result = HTTP.get(url)
 response_json = String(result.body)
@@ -173,7 +139,32 @@ result = HTTP.post(url, headers, json_step8)
 # function can_run_experiment(info::Dict, response_back_parsed, device::Dict)
 #     info['nq'] <= device["n_qubits"] ? true : false
 # end
-
-
-
-
+# json = """{
+#     "qobj_id": "exp123_072018",
+#     "schema_version": "1.0.0",
+#     "type": "QASM",
+#     "header": {
+#         "description": "Set of Experiments 1",
+#         "backend_name": "ibmq_qasm_simulator"},
+#     "config": {
+#         "shots": 1024,
+#         "memory_slots": 1,
+#         "init_qubits": true
+#         },
+#     "experiments": [
+#         {
+#         "header": {
+#             "memory_slots": 1,
+#             "n_qubits": 2,
+#             "clbit_labels": [["c1", 0]],
+#             "qubit_labels": [null,["q", 0],["q",1]]
+#             },
+#         "config": {},
+#         "instructions": [
+#             {"name": "h", "qubits": [1]},
+#             {"name": "id", "qubits": [2]},
+#             {"name": "s", "qubits": [1]}
+#             ]
+#         }
+#         ]    
+# }"""

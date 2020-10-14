@@ -1,4 +1,4 @@
-
+#phase :verify
 function yaotoqobj(qc::Array{ChainBlock{N}}, device::String; nshots=1024) where N
     nslots = 1
     main_header = Dict("description"=>"Set of Experiments 1", "backend_name" => "$(device)")
@@ -31,10 +31,6 @@ function generate_inst(qc::ChainBlock)
     end
     return inst
 end
-
-# todo: cover other gates
-#phase :verify
-#measure
 
 function generate_inst(blk::Union{PutBlock, RepeatedBlock})
     gate = blk.content
