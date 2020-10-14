@@ -5,7 +5,7 @@ function yaotoqobj(qc::Array{ChainBlock{N}}, device::String; nshots=1024) where 
     main_config = Dict("shots"=>nshots, "memory_slots"=>nslots, "init_qubits"=> true)
     experiments = collect(generate_experiment(i) for i in qc)
     data = Dict("qobj_id" => "foo", "schema_version"=>"1.0.0", "type"=>"QASM", "header"=>main_header, "config"=>main_config, "experiments"=>experiments)
-    Qobj(data)
+    # Qobj(data)
 end
 
 function generate_experiment(qc::ChainBlock)

@@ -1,4 +1,5 @@
 using HTTP, JSON
+using Yao, YaoBlocks
 const headers = (("content-type", "application/json"), ("Accept", "application/json"))
 
 struct IBMQUser #store other info here
@@ -7,6 +8,13 @@ end
 
 struct Qobj
     data::Dict{String, Any}
+end
+
+struct IBMQReg 
+    id::String
+    device::String
+    uploadurl::String
+    jobid::String     
 end
 
 """
@@ -31,7 +39,7 @@ function authenticate(token::String = "") # todo : save the token
     if response.status == 200
         println("Login Successful")
     end
-    return IBMQUser(response_parsed["id"])
+    IBMQUser(response_parsed["id"])
 end
 
 """
@@ -48,7 +56,7 @@ function get_backends(user::IBMQUser)
 end
 
 function run(user::IBMQUser, qobj::Qobj, device::String)
-    url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs?access_token=$(id)"
+    url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs?access_token=$(id)" #user.id
 
     req = Dict("backend" => Dict("name" => device), "allowObjectStorage" => true, "shareLevel"=> "none")
     request = HTTP.post(url , headers, JSON.json(req))
@@ -57,11 +65,28 @@ function run(user::IBMQUser, qobj::Qobj, device::String)
     
     objectinfo = response_parsed["objectStorageInfo"]
     upload_url = objectinfo["uploadUrl"]
-    job_id = response_parsed["id"]
+    jobid = response_parsed["id"]
 
     json = JSON.json(qobj.data)
     ckt_upload = HTTP.put(upload_url, [], json) 
+
+    #if 200
+    # Notify the backend that the job has been uploaded
+    url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(jobid)/jobDataUploaded?access_token=$(id)"
+    json_step4 ="""{
+                "data": "none",
+                "json": "none"
+            }"""
+    request = HTTP.post(url, headers, json_step4)
     return job_id
+end
+
+function status()
+    url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(jobid)?access_token=$(id)"
+    result = HTTP.get(url)
+    response_json = String(result.body)
+    response_parsed = JSON.parse(response_json)
+    return response_parsed["status"]
 end
 json = """{
     "qobj_id": "exp123_072018",
@@ -94,23 +119,12 @@ json = """{
 }"""
 
 
-# Notify the backend that the job has been uploaded
-url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(job_id)/jobDataUploaded?access_token=$(id)"
-json_step4 ="""{
-            "data": "none",
-            "json": "none"
-        }"""
-request = HTTP.post(url, headers, json_step4)
 
 
 
 
-# get result
-url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(job_id)?access_token=$(id)"
-result = HTTP.get(url)
-response_json = String(result.body)
-response_parsed = JSON.parse(response_json)
-url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(job_id)/resultDownloadUrl?access_token=$(id)"
+# # get result
+url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(jobid)/resultDownloadUrl?access_token=$(id)"
 result = HTTP.get(url)
 response_json = String(result.body)
 response_parsed = JSON.parse(response_json)
@@ -121,7 +135,13 @@ response_parsed = JSON.parse(response_json)
 res = response_parsed["results"]
 
 
-
+# STEP8: Confirm the data was downloaded
+url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(jobid)/resultDownloaded?access_token=$(id)"
+json_step8 = """{
+    "data": "none",
+    "json": "none"
+}"""
+result = HTTP.post(url, headers, json_step8)
 
 
 
