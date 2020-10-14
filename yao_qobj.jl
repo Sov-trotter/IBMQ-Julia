@@ -1,19 +1,19 @@
 
-function Qobj(qc::Array{ChainBlock{N}}, device::String; nshots=1024) where N
+function yaotoqobj(qc::Array{ChainBlock{N}}, device::String; nshots=1024) where N
     nslots = 1
     main_header = Dict("description"=>"Set of Experiments 1", "backend_name" => "$(device)")
     main_config = Dict("shots"=>nshots, "memory_slots"=>nslots, "init_qubits"=> true)
     experiments = collect(generate_experiment(i) for i in qc)
     data = Dict("qobj_id" => "foo", "schema_version"=>"1.0.0", "type"=>"QASM", "header"=>main_header, "config"=>main_config, "experiments"=>experiments)
-    
+    Qobj(data)
 end
 
 function generate_experiment(qc::ChainBlock)
     n_qubits = nqubits(qc)
-    n_classical_reg = 1 # figure out this info
+    n_classical_reg = 2 # figure out this info
     nslots=1
-    c_label = [["c", i] for i in 0:n_classical_reg]
-    q_label = [["q", i] for i in 0:n_qubits]
+    c_label = [["c", i] for i in 0:n_classical_reg-1]
+    q_label = [["q", i] for i in 0:n_qubits-1]
     exp_inst = generate_inst(qc)
     exp_header = Dict("memory_slots"=>nslots, "n_qubits"=>n_qubits, "clbit_labels"=>c_label, "qubit_labels"=>q_label)
     experiment = Dict("header"=>exp_header, "config"=>Dict(), "instructions"=>exp_inst)
@@ -23,11 +23,19 @@ end
 function generate_inst(qc::ChainBlock)
     inst = []
     for block in subblocks(qc)
-        push!(inst, generate_inst(block))
+        if block isa Union{PutBlock{N, M, ChainBlock{M}}, ChainBlock{O}} where {N, M, O}
+            push!(inst, generate_inst(block)...)
+        else
+            push!(inst, generate_inst(block))
+        end
     end
     return inst
 end
+
 # todo: cover other gates
+#phase :verify
+#measure
+
 function generate_inst(blk::Union{PutBlock, RepeatedBlock})
     gate = blk.content
     if gate isa HGate
@@ -36,9 +44,35 @@ function generate_inst(blk::Union{PutBlock, RepeatedBlock})
         nm = "id"
     elseif gate isa TGate
         nm = "t"
+    elseif gate isa SWAPGate
+        nm = "swap"
+    elseif gate isa Measure
+        nm = "measure"
     end
-    # todo :add more gates supported by the put/repeat block
-    return Dict("name"=>"$(nm)", "qubits"=>[blk.locs...]) 
+
+    if nm == "measure"
+        return Dict("name"=>"$(nm)", "qubits"=>[blk.locs...], "memory"=>[0])# memory:  List of memory slots in which to store the measurement results (mustbe the same length as qubits).  
+        #todo: generalize "memory" for all cases               
+    else    
+        return Dict("name"=>"$(nm)", "qubits"=>[blk.locs...]) 
+    end
+end
+
+function generate_inst(blk::PutBlock{N, M, ChainBlock{M}}) where {N, M}
+    data = []
+    for gate in blk.content
+        super_blk = gate.block
+        if super_blk isa ZGate
+            nm = "rz"
+        elseif super_blk isa YGate
+            nm = "ry"
+        elseif super_blk isa XGate
+            nm = "rx"
+        end
+        inst = Dict("name"=>"$(nm)", "qubits"=>[blk.locs...], "params"=>[gate.theta])
+        push!(data, inst)
+    end
+    return Tuple(data)
 end
 
 function generate_inst(blk::ControlBlock)
@@ -49,9 +83,18 @@ function generate_inst(blk::ControlBlock)
         nm = "cy"
     elseif gate isa ZGate
         nm = "cz"
+    elseif gate isa ShiftGate
+        nm = "cu1"
+        angle = gate.theta  #use Base.propertynames here
+    elseif gate isa PhaseGate   #fix this
+        nm = "s"
     end
-    # todo :add more gates supported by the control block
-    return Dict("name"=>"$(nm)", "qubits"=>[blk.locs..., blk.ctrl_locs...])
+    
+    if nm == "cu1" 
+        return Dict("name"=>"$(nm)", "qubits"=>[blk.locs..., blk.ctrl_locs...], "params"=>[angle])  
+    else  
+        return Dict("name"=>"$(nm)", "qubits"=>[blk.locs..., blk.ctrl_locs...])
+    end
 end
 
 
@@ -165,18 +208,3 @@ end
 #           cx c,t;
 #           u3(theta/2,phi,0) t;
 #         }
-
-# if gate isa HGate
-#     push!(inst, generate_inst(HGate, block))
-# elseif gate isa XGate
-#     push!(inst, generate_inst(XGate, block))
-# elseif gate isa YGate
-#     push!(inst, generate_inst(YGate, block))
-# elseif gate isa ZGate
-#     push!(inst, generate_inst(ZGate, block))
-# elseif gate isa I2Gate
-#     push!(inst, generate_inst(I2Gate, block))
-# elseif gate isa TGate
-#     push!(inst, generate_inst(TGate, block))
-
-
