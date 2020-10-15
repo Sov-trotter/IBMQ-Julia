@@ -62,7 +62,7 @@ end
 """
 Get backends info
 """
-function get_backends(user::IBMQUser)
+function createreg(user::IBMQUser)
     id = user.id
     url_back = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/devices/v/1?access_token=$(id)"
     println("Fetching Backends...")
