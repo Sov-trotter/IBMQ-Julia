@@ -12,13 +12,12 @@ The `createreg` will make a `Yao.AbstractRegister` type viz. `IBMQReg` that hold
 ```
 reg = createreg(user)
 ```
-will list the available backends where you can select various backends based on you circuit.
-
+This will list the available backends and an interactive selection.
 ## Uploading the circuit
 ```
 job = apply!(reg, [qc])
 ```
-The `apply!(::IBMQReg, ::Array{ChainBlock})` accepts multiple circuits in an array since some backends are capable of running multiple expertiments 
+The `apply!(::IBMQReg, ::Array{ChainBlock})` accepts multiple circuits in an array since some backends are capable of running multiple expertiments in a single job
 
 ## Checking Status
 ```
@@ -33,4 +32,4 @@ If the `status()` method returns `COMPLETED`, one can fetch the results with the
 ```
 getresult(job)
 ```
-The resulting data is a Dict format.
+The result data is stored in `Dict` format.
