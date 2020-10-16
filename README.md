@@ -1,5 +1,5 @@
 # Quickstart
-
+This is not in the form of a julia package so you will have to run the `init.jl` and `yao_qobj.jl` files. The former contains the web/REST API stuff while the latter holds code that converts yao IR to IBMQ supported Qobj.
 ## Login
 The `authenticate` method will log you in. 
 ```
