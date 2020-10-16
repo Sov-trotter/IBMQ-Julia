@@ -67,6 +67,12 @@ function createreg(user::IBMQUser)
     url_back = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/devices/v/1?access_token=$(id)"
     println("Fetching Backends...")
     response_back = HTTP.get(url_back)
+    if response_back.status == 200
+        println("✔")
+    else
+        println("❌")
+        return
+    end
     response_back_json = String(response_back.body)
     response_back_parsed = JSON.parse(response_back_json)
     id_back = [i["backend_name"] for i in response_back_parsed]
@@ -118,7 +124,7 @@ function run(reg::IBMQReg, qobj::Qobj)
     ckt_upload = HTTP.put(upload_url, [], json) 
     if ckt_upload.status == 200
         println("✔")
-        print("Notifying backend....")
+        print("Notifying backend...")
         # Notify the backend that the job has been uploaded
         url = "https://api.quantum-computing.ibm.com/api/Network/ibm-q/Groups/open/Projects/main/Jobs/$(jobid)/jobDataUploaded?access_token=$(reg.id)"
         json_step4 ="""{
